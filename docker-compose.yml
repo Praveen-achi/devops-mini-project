@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # The containerized web application
+  web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-mini-project:latest
+    container_name: devops_web_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - devops-network
+
+  # Jenkins CI/CD Controller
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: devops_jenkins
+    restart: unless-stopped
+    privileged: true
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - devops-network
+
+volumes:
+  jenkins_home:
+    driver: local
+
+networks:
+  devops-network:
+    driver: bridge
