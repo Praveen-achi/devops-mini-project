@@ -9,6 +9,6 @@ docker exec devops_jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
 Write-Host "`n===============================================" -ForegroundColor Green
 Write-Host "Services are running:"
-Write-Host " - Web App: http://localhost:3000"
-Write-Host " - Jenkins: http://localhost:8080"
+Write-Host " - Web App: http://localhost:3003"
+Write-Host " - Jenkins: http://localhost:8083"
 Write-Host "==============================================="
