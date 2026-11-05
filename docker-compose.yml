@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
-  # The containerized web application
-  web-app:
+  # 1. Main Telemetry Application & Web UI
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -14,10 +12,68 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=devops_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - devops-network
 
-  # Jenkins CI/CD Controller
+  # 2. PostgreSQL Relational Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: devops_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: devops_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d devops_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - devops-network
+
+  # 3. Redis In-Memory Cache
+  redis:
+    image: redis:7-alpine
+    container_name: devops_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - devops-network
+
+  # 4. Prometheus Time-Series Monitoring
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: devops_prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - devops-network
+
+  # 5. Jenkins CI/CD Controller
   jenkins:
     image: jenkins/jenkins:lts-jdk17
     container_name: devops_jenkins
@@ -34,10 +90,11 @@ services:
       - devops-network
 
 volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
   jenkins_home:
-    driver: local
 
 networks:
   devops-network:
     driver: bridge
-
